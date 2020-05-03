@@ -4,6 +4,7 @@ import requests
 import json
 import re 
 import os 
+import redis
 
 
 def  month_to_num(shortMonth):
@@ -23,8 +24,17 @@ def  month_to_num(shortMonth):
 	}[shortMonth]
 
 
-def is_saved(gu):
-	return False
+# def is_saved(gu,red):
+# 	try:
+# 		response = red.get(gu)
+# 		if response is None:
+# 			return False
+# 		return True
+# 	except Exception as e:
+# 		raise e
+# 		# return ? 
+
+
 def main():
 	url = 'http://farsi.khamenei.ir/rss'
 	# url = 'https://www.varzesh3.com/rss'
@@ -78,11 +88,14 @@ def main():
 		# json.dump(all_news,file,indent = 6)
 		# file.close
 		# print(all_news)
+		red = redis.Redis()
 
 
 		for gu in all_news: 
-			# if(is_saved(gu)):
-			# 	break;
+			if(red.exists(gu)):
+				break;
+
+
 			date = all_news[gu]["pubDate"]
 			# print(date)
 			month = month_to_num(date[8:11])
@@ -112,9 +125,14 @@ def main():
 			try :
 				file = open(path+"{}.json".format(gu),"w")
 				json.dump(all_news[gu],file,indent = 6)
+				file.close()
+
 			except Exception as ex : 
 				pass 
-			file.close
+
+			if not red.set(gu,gu):
+				print("not saved in database !!!!")
+
 		
 
 
